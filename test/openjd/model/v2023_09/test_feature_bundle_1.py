@@ -4,7 +4,7 @@
 import pytest
 from pydantic import ValidationError
 
-from openjd.model import create_job, decode_job_template
+from openjd.model import DecodeValidationError, create_job, decode_job_template
 from openjd.model._parse import _parse_model
 from openjd.model.v2023_09 import (
     Action,
@@ -878,6 +878,42 @@ class TestIdentifierLength:
         with pytest.raises(ValidationError) as excinfo:
             _parse_model(model=EmbeddedFileText, obj=data, context=fb1_context())
         assert "512" in str(excinfo.value)
+
+
+class TestJobParameterIdentifierLength:
+    """Tests for Identifier length validation on job parameter names."""
+
+    def test_job_param_name_64_chars_succeeds(self) -> None:
+        template = decode_job_template(
+            template={
+                "specificationVersion": "jobtemplate-2023-09",
+                "name": "Test",
+                "parameterDefinitions": [{"name": "A" * 64, "type": "STRING"}],
+                "steps": [
+                    {
+                        "name": "S",
+                        "script": {"actions": {"onRun": {"command": "echo"}}},
+                    }
+                ],
+            }
+        )
+        assert template is not None
+
+    def test_job_param_name_65_chars_fails(self) -> None:
+        with pytest.raises(DecodeValidationError):
+            decode_job_template(
+                template={
+                    "specificationVersion": "jobtemplate-2023-09",
+                    "name": "Test",
+                    "parameterDefinitions": [{"name": "A" * 65, "type": "STRING"}],
+                    "steps": [
+                        {
+                            "name": "S",
+                            "script": {"actions": {"onRun": {"command": "echo"}}},
+                        }
+                    ],
+                }
+            )
 
 
 class TestResolveSyntaxSugar:

@@ -215,6 +215,14 @@ JobName = Annotated[
 Identifier = Annotated[
     str, StringConstraints(min_length=1, max_length=512, strict=True, pattern=_identifier_regex)
 ]
+
+
+def _validate_identifier_length(v: str, info: ValidationInfo) -> str:
+    context = cast(Optional[ModelParsingContext], info.context)
+    max_len = 512 if context and "FEATURE_BUNDLE_1" in context.extensions else 64
+    if len(v) > max_len:
+        raise ValueError(f"name must be at most {max_len} characters long")
+    return v
 Description = Annotated[
     str,
     StringConstraints(
@@ -771,6 +779,7 @@ class IntTaskParameterDefinition(OpenJDModel_v2023_09):
         field="name",
     )
     _template_variable_sources = {"__export__": {"__self__"}}
+    _validate_name = field_validator("name")(_validate_identifier_length)
 
     def _get_range_task_param_type(self: Any) -> Type[OpenJDModel]:
         if isinstance(self.range, RangeString):
@@ -836,6 +845,7 @@ class FloatTaskParameterDefinition(OpenJDModel_v2023_09):
         field="name",
     )
     _template_variable_sources = {"__export__": {"__self__"}}
+    _validate_name = field_validator("name")(_validate_identifier_length)
     _job_creation_metadata = JobCreationMetadata(
         create_as=JobCreateAsMetadata(model=RangeListTaskParameterDefinition),
         resolve_fields={"range"},
@@ -875,6 +885,7 @@ class StringTaskParameterDefinition(OpenJDModel_v2023_09):
         field="name",
     )
     _template_variable_sources = {"__export__": {"__self__"}}
+    _validate_name = field_validator("name")(_validate_identifier_length)
     _job_creation_metadata = JobCreationMetadata(
         create_as=JobCreateAsMetadata(model=RangeListTaskParameterDefinition),
         resolve_fields={"range"},
@@ -903,6 +914,7 @@ class PathTaskParameterDefinition(OpenJDModel_v2023_09):
         field="name",
     )
     _template_variable_sources = {"__export__": {"__self__"}}
+    _validate_name = field_validator("name")(_validate_identifier_length)
     _job_creation_metadata = JobCreationMetadata(
         create_as=JobCreateAsMetadata(model=RangeListTaskParameterDefinition),
         resolve_fields={"range"},
@@ -936,6 +948,7 @@ class ChunkIntTaskParameterDefinition(OpenJDModel_v2023_09):
         field="name",
     )
     _template_variable_sources = {"__export__": {"__self__"}}
+    _validate_name = field_validator("name")(_validate_identifier_length)
 
     def _get_range_task_param_type(self: Any) -> Type[OpenJDModel]:
         if isinstance(self.range, RangeString):
@@ -1347,6 +1360,7 @@ class JobStringParameterDefinition(OpenJDModel_v2023_09, JobParameterInterface):
         field="name",
     )
     _template_variable_sources = {"__export__": {"__self__"}}
+    _validate_name = field_validator("name")(_validate_identifier_length)
     _job_creation_metadata = JobCreationMetadata(
         create_as=JobCreateAsMetadata(model=JobParameter),
         exclude_fields={
@@ -1589,6 +1603,7 @@ class JobPathParameterDefinition(OpenJDModel_v2023_09, JobParameterInterface):
         field="name",
     )
     _template_variable_sources = {"__export__": {"__self__"}}
+    _validate_name = field_validator("name")(_validate_identifier_length)
     _job_creation_metadata = JobCreationMetadata(
         create_as=JobCreateAsMetadata(model=JobParameter),
         exclude_fields={
@@ -1814,6 +1829,7 @@ class JobIntParameterDefinition(OpenJDModel_v2023_09):
         field="name",
     )
     _template_variable_sources = {"__export__": {"__self__"}}
+    _validate_name = field_validator("name")(_validate_identifier_length)
     _job_creation_metadata = JobCreationMetadata(
         create_as=JobCreateAsMetadata(model=JobParameter),
         exclude_fields={
@@ -2069,6 +2085,7 @@ class JobFloatParameterDefinition(OpenJDModel_v2023_09):
         field="name",
     )
     _template_variable_sources = {"__export__": {"__self__"}}
+    _validate_name = field_validator("name")(_validate_identifier_length)
     _job_creation_metadata = JobCreationMetadata(
         create_as=JobCreateAsMetadata(model=JobParameter),
         exclude_fields={

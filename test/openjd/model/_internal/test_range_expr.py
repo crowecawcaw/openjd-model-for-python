@@ -363,6 +363,15 @@ class TestIntRangeExpr:
         assert 0 not in IntRangeExpr.from_str("-1--2:-1")
 
 
+    def test_range_expr_max_1024_items_succeeds(self):
+        expr = IntRangeExpr.from_str("1-1024")
+        assert len(expr) == 1024
+
+    def test_range_expr_1025_items_fails(self):
+        with pytest.raises(ExpressionError):
+            IntRangeExpr.from_str("1-1025")
+
+
 class TestIntRange:
     def test_length(self):
         # GIVEN / WHEN / THEN

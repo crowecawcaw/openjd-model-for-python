@@ -4,7 +4,7 @@
 import pytest
 from pydantic import ValidationError
 
-from openjd.model import create_job, decode_job_template
+from openjd.model import DecodeValidationError, create_job, decode_job_template
 from openjd.model._parse import _parse_model
 from openjd.model.v2023_09 import (
     Action,
@@ -13,6 +13,7 @@ from openjd.model.v2023_09 import (
     CancelationMethodNotifyThenTerminate,
     EmbeddedFileText,
     ExtensionName,
+    IntTaskParameterDefinition,
     JobTemplate,
     EnvironmentTemplate,
     ModelParsingContext,
@@ -878,6 +879,77 @@ class TestIdentifierLength:
         with pytest.raises(ValidationError) as excinfo:
             _parse_model(model=EmbeddedFileText, obj=data, context=fb1_context())
         assert "512" in str(excinfo.value)
+
+
+class TestJobParameterIdentifierLength:
+    """Tests for Identifier length validation on job parameter names."""
+
+    def test_job_param_name_64_chars_succeeds(self) -> None:
+        template = decode_job_template(
+            template={
+                "specificationVersion": "jobtemplate-2023-09",
+                "name": "Test",
+                "parameterDefinitions": [{"name": "A" * 64, "type": "STRING"}],
+                "steps": [
+                    {
+                        "name": "S",
+                        "script": {"actions": {"onRun": {"command": "echo"}}},
+                    }
+                ],
+            }
+        )
+        assert template is not None
+
+    def test_job_param_name_65_chars_fails(self) -> None:
+        with pytest.raises(DecodeValidationError):
+            decode_job_template(
+                template={
+                    "specificationVersion": "jobtemplate-2023-09",
+                    "name": "Test",
+                    "parameterDefinitions": [{"name": "A" * 65, "type": "STRING"}],
+                    "steps": [
+                        {
+                            "name": "S",
+                            "script": {"actions": {"onRun": {"command": "echo"}}},
+                        }
+                    ],
+                }
+            )
+
+    def test_job_param_name_513_chars_with_extension_fails(self) -> None:
+        with pytest.raises(DecodeValidationError):
+            decode_job_template(
+                template={
+                    "specificationVersion": "jobtemplate-2023-09",
+                    "name": "Test",
+                    "extensions": ["FEATURE_BUNDLE_1"],
+                    "parameterDefinitions": [{"name": "A" * 513, "type": "STRING"}],
+                    "steps": [
+                        {
+                            "name": "S",
+                            "script": {"actions": {"onRun": {"command": "echo"}}},
+                        }
+                    ],
+                },
+                supported_extensions=["FEATURE_BUNDLE_1"],
+            )
+
+    def test_task_param_name_65_chars_without_extension_fails(self) -> None:
+        with pytest.raises(ValidationError) as excinfo:
+            _parse_model(
+                model=IntTaskParameterDefinition,
+                obj={"name": "A" * 65, "type": "INT", "range": "1-5"},
+                context=ModelParsingContext(),
+            )
+        assert "64" in str(excinfo.value)
+
+    def test_task_param_name_512_chars_with_extension_succeeds(self) -> None:
+        result = _parse_model(
+            model=IntTaskParameterDefinition,
+            obj={"name": "A" * 512, "type": "INT", "range": "1-5"},
+            context=fb1_context(),
+        )
+        assert len(result.name) == 512
 
 
 class TestResolveSyntaxSugar:

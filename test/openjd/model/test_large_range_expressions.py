@@ -1,13 +1,11 @@
 # Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 
 import pytest
-from _pytest.outcomes import Failed
 
 from openjd.model import (
     ParameterValueType,
     StepParameterSpaceIterator,
 )
-from openjd.model._range_expr import IntRangeExpr
 from openjd.model.v2023_09 import (
     RangeExpressionTaskParameterDefinition as RangeExpressionTaskParameterDefinition_2023_09,
     StepParameterSpace as StepParameterSpace_2023_09,
@@ -32,17 +30,15 @@ class TestLargeRangeExpressions:
         )
         it = StepParameterSpaceIterator(space=space)
         assert len(it) == 999999999
-        # Spot-check individual access is O(1)
         params = it[0]
         assert params["Frame"].value == "1"
         params = it[999999998]
         assert params["Frame"].value == "999999999"
 
     @pytest.mark.timeout(5)
-    @pytest.mark.xfail(reason="Chunking materializes the full range list, causing timeout/OOM", strict=True, raises=Failed)
-    def test_chunked_large_range_materializes_and_times_out(self):
+    def test_chunked_large_range_materializes(self):
         """Chunking a massive range expression materializes the full list,
-        which should exhaust time/memory. This documents the known limitation."""
+        which exhausts time/memory. This documents the known limitation."""
         space = StepParameterSpace_2023_09(
             taskParameterDefinitions={
                 "Frame": RangeExpressionTaskParameterDefinition_2023_09(
